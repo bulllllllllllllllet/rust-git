@@ -34,6 +34,7 @@ enum Commands {
     Merge {
         branch: String,
     },
+    Log,
 }
 
 fn main() -> Result<()> {
@@ -47,5 +48,6 @@ fn main() -> Result<()> {
         Commands::Branch { name } => commands::branch(name),
         Commands::Checkout { name } => commands::checkout(name),
         Commands::Merge { branch } => commands::merge(branch),
+        Commands::Log => commands::log(),
     }
 }

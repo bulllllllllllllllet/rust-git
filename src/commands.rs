@@ -187,6 +187,26 @@ pub fn rm(path: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn log() -> Result<()> {
+    let mut current_hash = get_head_commit()?;
+
+    while let Some(hash) = current_hash {
+        let obj = GitObject::load(&hash)?;
+        if let GitObject::Commit(commit) = obj {
+            println!("commit {}", hash);
+            println!("Author: {}", commit.author);
+            println!("Date:   {} (Unix Timestamp)", commit.timestamp);
+            println!("\n    {}\n", commit.message);
+
+            current_hash = commit.parents.first().cloned();
+        } else {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
 pub fn branch(name: &str) -> Result<()> {
     let head = get_head_commit()?;
     if let Some(hash) = head {

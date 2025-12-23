@@ -1,47 +1,49 @@
 # Rusty Git
 
-A simple Git implementation in Rust.
+一个使用 Rust 实现的简易 Git 版本控制系统。
 
-## Features
+## 功能特性
 
-- `init`: Initialize a new repository.
-- `add <path>`: Add files to staging area (supports directories).
-- `commit -m <msg>`: Commit staged changes.
-- `rm <path>`: Remove file from index and working directory.
-- `branch <name>`: Create a new branch.
-- `checkout <name>`: Switch to a branch.
-- `merge <branch>`: Merge a branch (Fast-forward only).
+- `init`: 初始化新仓库。
+- `add <path>`: 将文件添加到暂存区（支持目录）。
+- `commit -m <msg>`: 提交暂存区的更改。
+- `rm <path>`: 从索引和工作目录中删除文件。
+- `branch <name>`: 创建新分支。
+- `checkout <name>`: 切换分支。
+- `merge <branch>`: 合并分支（仅支持快进合并 Fast-forward）。
+- `log`: 查看提交历史记录。
 
-## Usage
+## 使用方法
 
 ```bash
-# Build
+# 编译项目
 cargo build --release
 
-# Run
+# 运行示例
 ./target/release/rust-git init
 ./target/release/rust-git add .
-./target/release/rust-git commit -m "Initial commit"
+./target/release/rust-git commit -m "初始提交"
+./target/release/rust-git log
 ./target/release/rust-git branch dev
 ./target/release/rust-git checkout dev
-# ... make changes ...
+# ... 修改文件 ...
 ./target/release/rust-git add .
-./target/release/rust-git commit -m "Changes on dev"
+./target/release/rust-git commit -m "在 dev 分支上的修改"
 ./target/release/rust-git checkout master
 ./target/release/rust-git merge dev
 ```
 
-## Design
+## 设计原理
 
-- **Objects**: stored in `.git/objects` as JSON (for readability).
-  - `Blob`: File content.
-  - `Tree`: Directory structure.
-  - `Commit`: Snapshot info.
-- **Refs**: stored in `.git/refs/heads`.
-- **Index**: stored in `.git/index` as JSON.
+- **对象 (Objects)**: 存储在 `.git/objects` 目录下，使用 JSON 格式序列化（为了增强可读性）。
+  - `Blob`: 存储文件内容。
+  - `Tree`: 存储目录结构。
+  - `Commit`: 存储快照信息。
+- **引用 (Refs)**: 存储在 `.git/refs/heads`。
+- **索引 (Index)**: 存储在 `.git/index`，采用 JSON 格式。
 
-## Limitations
+## 局限性
 
-- `merge` only supports fast-forward.
-- Binary files are skipped or might cause issues (assumes text).
-- No diff/status command implemented yet.
+- `merge` 仅支持快进合并 (Fast-forward)。
+- 跳过二进制文件或可能引起问题（假设处理的都是文本文件）。
+- 尚未实现 `diff` 或 `status` 命令。

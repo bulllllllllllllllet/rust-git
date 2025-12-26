@@ -306,10 +306,7 @@ fn build_index_from_tree(tree_hash: &str, current_path: &Path, index: &mut Index
 
 pub fn merge(branch: &str) -> Result<()> {
     let head = get_head_commit()?;
-    let head_hash = match head {
-        Some(h) => h,
-        None => return Err(anyhow::anyhow!("Nothing to merge into")),
-    };
+    let head_hash = head.ok_or_else(|| anyhow::anyhow!("Nothing to merge into"))?;
     
     let branch_path = Path::new(".git/refs/heads").join(branch);
     if !branch_path.exists() {

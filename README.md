@@ -35,6 +35,7 @@ cargo build --release
 
 ## 设计原理
 
+- **哈希算法**: 使用 SHA-256 算法生成对象的唯一标识符。
 - **对象 (Objects)**: 存储在 `.git/objects` 目录下，使用 JSON 格式序列化（为了增强可读性）。
   - `Blob`: 存储文件内容。
   - `Tree`: 存储目录结构。

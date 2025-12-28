@@ -22,30 +22,34 @@ pub fn init() -> Result<()> {
 
 use crate::objects::{GitObject, Index, Commit, TreeEntry};
 use walkdir::WalkDir;
+use crate::utils::GitIgnore;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::collections::BTreeMap;
 
 pub fn add(path: &str) -> Result<()> {
     let mut index = Index::load()?;
+    let ignore = GitIgnore::new();
     
     for entry in WalkDir::new(path) {
         let entry = entry?;
         let path_str = entry.path().to_str().unwrap();
         
+        // Remove "./" prefix if present for cleaner paths
+        let clean_path = if path_str.starts_with("./") {
+            &path_str[2..]
+        } else {
+            path_str
+        };
+        
+        if ignore.is_ignored(clean_path) {
+            continue;
+        }
+
         if entry.file_type().is_file() {
-             if path_str.starts_with(".git") || path_str.contains("/.git") || path_str.starts_with("target") || path_str.contains("/target") {
-                continue;
-            }
-            
             if let Ok(content) = fs::read_to_string(path_str) {
                 let blob = GitObject::Blob(content);
                 let hash = blob.save()?;
-                // Remove "./" prefix if present for cleaner paths
-                let clean_path = if path_str.starts_with("./") {
-                    &path_str[2..]
-                } else {
-                    path_str
-                };
+                
                 index.entries.insert(clean_path.to_string(), hash);
                 println!("Added {}", clean_path);
             } else {
@@ -356,43 +360,50 @@ pub fn status() -> Result<()> {
     let mut modified = Vec::new();
     let mut deleted = Vec::new();
     
+    let ignore = GitIgnore::new();
+
+    // 1. Check for untracked files
     for entry in WalkDir::new(".") {
         let entry = entry?;
         let path_str = entry.path().to_str().unwrap();
         
-        if entry.file_type().is_file() {
-            if path_str.starts_with("./.git") || path_str.contains("/.git") || path_str.starts_with("./target") || path_str.contains("/target") {
-                continue;
-            }
-            
-            let clean_path = if path_str.starts_with("./") {
-                &path_str[2..]
-            } else {
-                path_str
-            };
+        // Remove "./" prefix
+        let clean_path = if path_str.starts_with("./") {
+            &path_str[2..]
+        } else {
+            path_str
+        };
 
-            if let Some(index_hash) = index_entries.remove(clean_path) {
-                // File is in index, check if modified
-                if let Ok(content) = fs::read_to_string(path_str) {
-                    let blob = GitObject::Blob(content);
-                    // Calculate hash without saving
-                    let json = serde_json::to_string(&blob)?;
-                    let current_hash = crate::utils::hash_content(&json);
-                    
-                    if current_hash != index_hash {
-                        modified.push(clean_path.to_string());
-                    }
-                }
-            } else {
-                // Not in index
+        if ignore.is_ignored(clean_path) {
+            continue;
+        }
+        
+        if entry.file_type().is_file() {
+            // If not in index, it's untracked
+            if !index_entries.contains_key(clean_path) {
                 untracked.push(clean_path.to_string());
             }
         }
     }
-    
-    // Remaining in index_entries are deleted from workspace
-    for (path, _) in index_entries {
-        deleted.push(path);
+
+    // 2. Check for modified and deleted files (iterating over Index)
+    let entries_to_check: Vec<(String, String)> = index_entries.iter().map(|(k,v)| (k.clone(), v.clone())).collect();
+
+    for (path, index_hash) in entries_to_check {
+        if Path::new(&path).exists() {
+             if let Ok(content) = fs::read_to_string(&path) {
+                let blob = GitObject::Blob(content);
+                // Calculate hash without saving
+                let json = serde_json::to_string(&blob)?;
+                let current_hash = crate::utils::hash_content(&json);
+                
+                if current_hash != index_hash {
+                    modified.push(path);
+                }
+            }
+        } else {
+            deleted.push(path);
+        }
     }
     
     if !modified.is_empty() || !deleted.is_empty() {

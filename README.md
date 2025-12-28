@@ -12,8 +12,9 @@
 - `checkout <name>`: 切换分支。
 - `merge <branch>`: 合并分支（仅支持快进合并 Fast-forward）。
 - `log`: 查看提交历史记录。
-- `status`: 查看工作区状态。
+- `status`: 查看工作区状态（支持检测 untracked, modified, deleted 文件）。
 - `diff`: 查看工作区与暂存区的差异。
+- `.gitignore`: 支持通过 .gitignore 文件忽略特定文件或目录（支持 glob 模式，如 `*.log`, `target/`）。
 
 ## 使用方法
 

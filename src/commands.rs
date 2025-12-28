@@ -50,8 +50,16 @@ pub fn add(path: &str) -> Result<()> {
                 let blob = GitObject::Blob(content);
                 let hash = blob.save()?;
                 
-                index.entries.insert(clean_path.to_string(), hash);
-                println!("Added {}", clean_path);
+                let path_string = clean_path.to_string();
+                let is_new_or_modified = match index.entries.get(&path_string) {
+                    Some(old_hash) => *old_hash != hash,
+                    None => true,
+                };
+
+                if is_new_or_modified {
+                    index.entries.insert(path_string, hash);
+                    println!("Added {}", clean_path);
+                }
             } else {
                 println!("Skipping binary or unreadable file: {}", path_str);
             }

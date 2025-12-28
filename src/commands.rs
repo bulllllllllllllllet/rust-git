@@ -346,3 +346,77 @@ fn is_ancestor(ancestor: &str, descendant: &str) -> Result<bool> {
     }
     Ok(false)
 }
+
+pub fn status() -> Result<()> {
+    let index = Index::load()?;
+    // We use a BTreeMap to keep output sorted
+    let mut index_entries: BTreeMap<String, String> = index.entries.iter().map(|(k,v)| (k.clone(), v.clone())).collect();
+    
+    let mut untracked = Vec::new();
+    let mut modified = Vec::new();
+    let mut deleted = Vec::new();
+    
+    for entry in WalkDir::new(".") {
+        let entry = entry?;
+        let path_str = entry.path().to_str().unwrap();
+        
+        if entry.file_type().is_file() {
+            if path_str.starts_with("./.git") || path_str.contains("/.git") || path_str.starts_with("./target") || path_str.contains("/target") {
+                continue;
+            }
+            
+            let clean_path = if path_str.starts_with("./") {
+                &path_str[2..]
+            } else {
+                path_str
+            };
+
+            if let Some(index_hash) = index_entries.remove(clean_path) {
+                // File is in index, check if modified
+                if let Ok(content) = fs::read_to_string(path_str) {
+                    let blob = GitObject::Blob(content);
+                    // Calculate hash without saving
+                    let json = serde_json::to_string(&blob)?;
+                    let current_hash = crate::utils::hash_content(&json);
+                    
+                    if current_hash != index_hash {
+                        modified.push(clean_path.to_string());
+                    }
+                }
+            } else {
+                // Not in index
+                untracked.push(clean_path.to_string());
+            }
+        }
+    }
+    
+    // Remaining in index_entries are deleted from workspace
+    for (path, _) in index_entries {
+        deleted.push(path);
+    }
+    
+    if !modified.is_empty() || !deleted.is_empty() {
+        println!("Changes not staged for commit:");
+        for path in &modified {
+            println!("\tmodified: {}", path);
+        }
+        for path in &deleted {
+            println!("\tdeleted:  {}", path);
+        }
+        println!();
+    }
+    
+    if !untracked.is_empty() {
+        println!("Untracked files:");
+        for path in &untracked {
+            println!("\t{}", path);
+        }
+        println!();
+    }
+    
+    if modified.is_empty() && deleted.is_empty() && untracked.is_empty() {
+        println!("nothing to commit, working tree clean");
+    }
+    
+    Ok(())
+}

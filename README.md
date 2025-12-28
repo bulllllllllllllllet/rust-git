@@ -12,6 +12,7 @@
 - `checkout <name>`: 切换分支。
 - `merge <branch>`: 合并分支（仅支持快进合并 Fast-forward）。
 - `log`: 查看提交历史记录。
+- `status`: 查看工作区状态。
 
 ## 使用方法
 
@@ -47,4 +48,4 @@ cargo build --release
 
 - `merge` 仅支持快进合并 (Fast-forward)。
 - 跳过二进制文件或可能引起问题（假设处理的都是文本文件）。
-- 尚未实现 `diff` 或 `status` 命令。
+- 尚未实现 `diff` 命令。

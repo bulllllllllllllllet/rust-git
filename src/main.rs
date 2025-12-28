@@ -36,6 +36,7 @@ enum Commands {
     },
     Log,
     Status,
+    Diff,
 }
 
 fn main() -> Result<()> {
@@ -51,5 +52,6 @@ fn main() -> Result<()> {
         Commands::Merge { branch } => commands::merge(branch),
         Commands::Log => commands::log(),
         Commands::Status => commands::status(),
+        Commands::Diff => commands::diff(),
     }
 }

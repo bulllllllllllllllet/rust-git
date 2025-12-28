@@ -420,3 +420,43 @@ pub fn status() -> Result<()> {
     
     Ok(())
 }
+
+use similar::{ChangeTag, TextDiff};
+
+pub fn diff() -> Result<()> {
+    let index = Index::load()?;
+    
+    for (path, hash) in &index.entries {
+        if Path::new(path).exists() {
+             // 1. Get content from Working Directory
+            let content_wd = fs::read_to_string(path)?;
+            
+            // 2. Get content from Index (Blob)
+            let obj = GitObject::load(hash)?;
+            let content_index = match obj {
+                GitObject::Blob(content) => content,
+                _ => continue, // Should not happen for file entries in index
+            };
+            
+            // 3. Compare
+            if content_wd != content_index {
+                println!("diff --git a/{} b/{}", path, path);
+                println!("--- a/{}", path);
+                println!("+++ b/{}", path);
+                
+                let diff = TextDiff::from_lines(&content_index, &content_wd);
+                
+                for change in diff.iter_all_changes() {
+                    let sign = match change.tag() {
+                        ChangeTag::Delete => "-",
+                        ChangeTag::Insert => "+",
+                        ChangeTag::Equal => " ",
+                    };
+                    print!("{}{}", sign, change);
+                }
+                println!();
+            }
+        }
+    }
+    Ok(())
+}

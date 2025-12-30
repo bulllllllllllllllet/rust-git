@@ -48,7 +48,7 @@ pub fn add(path: &str) -> Result<()> {
         if entry.file_type().is_file() {
             if let Ok(content) = fs::read_to_string(path_str) {
                 let blob = GitObject::Blob(content);
-                let hash = blob.save()?;
+                let hash= blob.save()?;
                 
                 let path_string = clean_path.to_string();
                 let is_new_or_modified = match index.entries.get(&path_string) {
@@ -71,15 +71,18 @@ pub fn add(path: &str) -> Result<()> {
 }
 
 pub fn commit(message: &str) -> Result<()> {
+    //构建树
     let index = Index::load()?;
     let root_hash = build_root_tree(&index)?;
-    
+
+    //寻找父节点
     let parents = if let Some(p) = get_head_commit()? {
         vec![p]
     } else {
         vec![]
     };
-    
+
+    //生成提交对象
     let commit = Commit {
         tree: root_hash,
         parents,
@@ -87,7 +90,8 @@ pub fn commit(message: &str) -> Result<()> {
         message: message.to_string(),
         timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
     };
-    
+
+    //把当前分支（如 master）的指针，移动到这个最新的 Commit 哈希上。
     let commit_hash = GitObject::Commit(commit).save()?;
     
     update_head(&commit_hash)?;
@@ -220,7 +224,9 @@ pub fn log() -> Result<()> {
 }
 
 pub fn branch(name: &str) -> Result<()> {
+    //获取当前所在的提交哈希
     let head = get_head_commit()?;
+    //在 refs/heads 目录下创建一个新文件，以新分支名为命名，并且把当前所在的提交哈希写入这个文件中。
     if let Some(hash) = head {
         let branch_path = Path::new(".git/refs/heads").join(name);
         if let Some(parent) = branch_path.parent() {
